@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ## WFM Forecasting and Scheduling Assistant
+# WFM Forecasting and Scheduling Assistant
 
-# The aim of this exercise is to implement a solution for workforce management by finding a workforce optimization tool at the contact centers of the Countries across the Caribbean region. The exercise is done by creating a forecast for a time series of hourly incoming call data by creating a model using TensorFlow (which was an experimental exercise that would've been developed on further) as well as the Prophet package which specializes in this assignment framework. The forecast was then used as input to an erlangC model which had its parameters tuned to the specific business requirements.
+"""The aim of this exercise is to implement a solution for workforce management by finding a workforce optimization tool at the contact centers of the Countries across the 
+Caribbean region. The exercise is done by creating a forecast for a time series of hourly incoming call data by creating a model using TensorFlow 
+(which was an experimental exercise that would've been developed on further) as well as the Prophet package which specializes in this assignment framework. 
+The forecast was then used as input to an erlangC model which had its parameters tuned to the specific business requirements."""
 
 # Loading associated packages
 
@@ -31,7 +34,7 @@ from datetime import datetime, timedelta
 from pyworkforce.queuing import ErlangC
 
 
-# #### Reading file from path.
+# Reading file from path.
 
 # In[274]:
 
@@ -39,7 +42,8 @@ from pyworkforce.queuing import ErlangC
 directory = r'C:\Users\roy_shaw\Artificial_Directory\WFM\New\OECS\60-min_interval'
 
 
-# Folder of subfolders would easily be navigated by iterating through the directory. Using the os.walk function documents ending with the '.xlsx' extension were selected, loaded and merged into one dataframe repository.
+"""Folder of subfolders would easily be navigated by iterating through the directory. Using the os.walk function documents ending with the '.xlsx' extension were selected, 
+loaded and merged into one dataframe repository."""
 
 # In[275]:
 
@@ -89,7 +93,8 @@ merged_df_
 merged_df_['Interval Start Time'] = pd.to_datetime(merged_df_['Interval Start Time'], format='mixed', infer_datetime_format=True)
 
 
-# Data cleaning by removing the 'Skills' column, dropping NA values from the 'Interval Start Time' column and sorting same. At the end we see the output of the last 5 rows to check that the summary data that was present in the input data was removed (after dropping the NA values as specified).
+"""Data cleaning by removing the 'Skills' column, dropping NA values from the 'Interval Start Time' column and sorting same. 
+At the end we see the output of the last 5 rows to check that the summary data that was present in the input data was removed (after dropping the NA values as specified)."""
 
 # In[283]:
 
@@ -149,59 +154,72 @@ merged_df_['Interval Start Time']=merged_df_['Interval Start Time'].dt.strftime(
 merged_df_['Interval Start Time']
 
 
-# We convert the 'Interval Start Time' and 'Interval End Time' to a string and access the start and end times using string slicing. To add these features to the dataframe we create a list from the lst_strt and lst_end series that were the result of the slices and create the columns in the dataframe by reading the lists into the required columns.
+"""We convert the 'Interval Start Time' and 'Interval End Time' to a string and access the start and end times using string slicing. 
+To add these features to the dataframe we create a list from the lst_strt and lst_end series that were the result of the slices and create the columns in the
+dataframe by reading the lists into the required columns."""
 
 # In[296]:
 
+# Changing the format of the time columns based on what is required by the software
 
-get_ipython().run_cell_magic('time', '', "merged_df_['Interval Start Time'] = pd.to_datetime(merged_df_['Interval Start Time'], infer_datetime_format=True, format='mixed')\nmerged_df_['Interval End Time'] = pd.to_datetime(merged_df_['Interval End Time'], infer_datetime_format=True, format='mixed')\nmerged_df_['trans_start'] = merged_df_['Interval Start Time'].dt.strftime('%d-%m-%Y %H:%M:%S')\nmerged_df_['trans_end'] = merged_df_['Interval End Time'].dt.strftime('%d-%m-%Y %H:%M:%S')\nmerged_df_['date'] = pd.to_datetime(merged_df_['Interval Start Time']).dt.date\n\nlst_strt = merged_df_['Interval Start Time'].dt.strftime('%d-%m-%Y %H:%M:%S').str[11:]\nlst_end = merged_df_['Interval End Time'].dt.strftime('%d-%m-%Y %H:%M:%S').str[11:]\n\ntrans_start = lst_strt.tolist()\ntrans_end = lst_end.tolist()\n\nmerged_df_['Interval Start Time'] = trans_start\nmerged_df_['Interval End Time'] = trans_end")
+get_ipython().run_cell_magic('time', '', "merged_df_['Interval Start Time'] = pd.to_datetime(merged_df_['Interval Start Time'], infer_datetime_format=True, format='mixed') \n
+merged_df_['Interval End Time'] = pd.to_datetime(merged_df_['Interval End Time'], infer_datetime_format=True, format='mixed') \n
+merged_df_['trans_start'] = merged_df_['Interval Start Time'].dt.strftime('%d-%m-%Y %H:%M:%S') \n
+merged_df_['trans_end'] = merged_df_['Interval End Time'].dt.strftime('%d-%m-%Y %H:%M:%S') \n
+merged_df_['date'] = pd.to_datetime(merged_df_['Interval Start Time']).dt.date \n
+lst_strt = merged_df_['Interval Start Time'].dt.strftime('%d-%m-%Y %H:%M:%S').str[11:] \n
+lst_end = merged_df_['Interval End Time'].dt.strftime('%d-%m-%Y %H:%M:%S').str[11:] \n
+trans_start = lst_strt.tolist() \n
+trans_end = lst_end.tolist() \n
+merged_df_['Interval Start Time'] = trans_start \n
+merged_df_['Interval End Time'] = trans_end
 
 
 # In[298]:
-
+#Copying the raw data to a variable to prevent override
 
 filler_4 = merged_df_.copy(deep = True)
 
 
 # In[299]:
-
+# Sorting the dataframe by the start time intervals
 
 filler_4 = filler_4.sort_values(by='Interval Start Time')
 
 
 # In[303]:
 
-
+#Committing the sorted dataframe to a df_new (a new dataframe)
 df_new = filler_4
 
 
 # In[307]:
 
-
+# Rearranging the start time to show the standard day first format
 df_new['Interval Start Datetime'] = pd.to_datetime(df_new['Interval Start Time'], dayfirst=True)
 
 
 # In[308]:
 
-
+#Converting date pulled to a datetime variable to run date calculations
 df_new['date'] = pd.to_datetime(df_new['Interval Start Datetime'], dayfirst=True, format='mixed').dt.date
 
 
 # In[309]:
 
-
+#Converting interval start time to a time variable to make time calculations
 df_new['Interval Start Time'] = df_new['Interval Start Datetime'].apply(lambda x: x.time())
 
 
 # In[310]:
 
-
+# Adding a new variable "Day of the week" to find patterns in the data
 df_new['Day of week'] = df_new['Interval Start Datetime'].dt.day_name()
 
 
 # In[311]:
 
-
+# Converting dataframe to a CSV document as a checkpoint in the script
 df_new.to_csv(r'C:\Users\roy_shaw\Artificial_Directory\WFM\outputs\df_update_Nov-14_FY25_OECS.csv')
 
 
@@ -209,35 +227,38 @@ df_new.to_csv(r'C:\Users\roy_shaw\Artificial_Directory\WFM\outputs\df_update_Nov
 
 # In[313]:
 
-
+# removing indicies to set the datetime variable as the main column (primary key)
 df_new.reset_index(inplace=True)
 
 
 # In[314]:
 
-
+# Copying df_new to a new variable result to avoid reducing errors or possible changes to original dataframe
 result = df_new.copy(deep=True)
 
 
 # In[315]:
 
-
+# removing indicies from the result dataframe
 result = pd.DataFrame(result).reset_index()
 
 
-# The TensorFlow package requires numerical inputs hence the conversion here for the datetime information here where we further breakdown the day of the week and hour values using the sine and cosine functions based on the standard practice for this information.
+"""The Machine Learning (ML) package requires numerical inputs hence the conversion here for the datetime information here where we 
+further breakdown the day of the week and hour values using the sine and cosine functions based on the standard practice for this information."""
 
 # In[149]:
 
-
+"""ensuring structure of the date column remains consistent"""
 result['date'] = pd.to_datetime(df_new['date'])
 
+"""gathering and assigning date break-down for year, month, etc. to new column"""
 result['year'] = result['date'].dt.year
 result['month'] = result['date'].dt.month
 result['day_of_week'] = result['date'].dt.dayofweek
 result['hour'] = result['date'].dt.hour
 result['minute'] = result['date'].dt.month
 
+# ML package requires numerical values to work correctly, here we convert the time, day of week and monthly information to a cyclical format with the sine and cosine function  
 result['hour_sin'] = np.sin(2 * np.pi * result['hour'] / 48)
 result['hour_cos'] = np.cos(2 * np.pi * result['hour'] / 48)
 
@@ -247,13 +268,13 @@ result['day_of_week_cos'] = np.cos(2 * np.pi * result['day_of_week'] / 7)
 result['month_sin'] = np.sin(2 * np.pi * result['month'] / 12)
 result['month_cos'] = np.cos(2 * np.pi * result['month'] / 12)
 
+#removing columns that are not required of the model 
 result.drop(columns=['date'], inplace = True)
 
 
-# Training data using TensorFlow
+# Training data using TensorFlow (the ML algorithm)
 
 # In[150]:
-
 
 X = result[['year','month_sin','month_cos','day_of_week_sin','day_of_week_cos','hour_sin','hour_cos']]
 y = result['Calls Presented']
@@ -261,21 +282,17 @@ y = result['Calls Presented']
 features = X.astype('float32')
 target = y.astype('float32')
 
-
 # Here we split the data into training and testing based on the industry standard of 80% training and 20% testing.
 
 # In[151]:
-
 
 from sklearn.model_selection import train_test_split
 
 X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, shuffle=False)
 
-
-# Encorporating features and requirements for TensorFlow processing and model development.
+# Adding features for columns and naming requirements for TensorFlow processing and model development.
 
 # In[152]:
-
 
 # Convert to TensorFlow dataset
 dataset = tf.data.Dataset.from_tensor_slices((X_train.values, y_train.values))
@@ -283,20 +300,16 @@ dataset = tf.data.Dataset.from_tensor_slices((X_train.values, y_train.values))
 # Batch, shuffle, and prefetch the dataset for efficient training
 dataset = dataset.batch(32).shuffle(1000).prefetch(tf.data.experimental.AUTOTUNE)
 
-# Use the dataset for model training
+# Used the dataset and parameters for model training
 model.fit(dataset, epochs=10)
 
 
 # In[153]:
 
-
+# testing model to find accuracy in predicition
 y_pred = model.predict(X_test)
 
-
-# Exceptionally well value for MSE value derived from the predicted and observed values from the model.
-
 # In[156]:
-
 
 from sklearn.metrics import mean_squared_error
 
@@ -314,82 +327,73 @@ import pickle
 with open("model.pkl", "wb") as Tensor_WFM:
     pickle.dump(model, Tensor_WFM)
 
+# First model for exercise was created and will be compared to another ML model
 
 # In[675]:
-
+# Now creating a new ML model for an alternative should the old ML model be a lesser fit 
 
 merged_df_.columns
 
-
 # In[676]:
 
-
+# creating copy of dataframe to avoid overriding with function methods
 merged_df1 = merged_df_.copy()
-
 
 # In[677]:
 
-
+#Grouping the interval start time column by the aggregate of sum of calls presented and mean of service levels across the different queues to have a macroscopic perspective
 merged_df1 = merged_df1.groupby('Interval Start Time').agg({'Calls Presented':'sum', 'Service Level': 'mean'})
 
+# exporting the dataframe to a CSV file format
+merged_df1.to_csv(r'C:\Users\roy_shaw\Artificial_Directory\WFM\proof_of_concept.csv')
 
-# In[678]:
-
-
-merged_df1.to_csv(r'C:\Users\roy_shaw\Artificial_Directory\WFM\proof_of_concept_OECS.csv')
-
-
-# The TensorFlow forecast with the model was due for development however the exercise was only just implemented before my post at the company was made redundant. The Prophet model used was simpler as the input parameters for the TensorFlow modeling required special attention and detail to ensre that the numerical elements were enabled and to convert to the original datetime structure which was used from the data cleaning stage (also for added readability) would require additional steps to be recaptured from the forecast from the TensorFlow model, given that the project was required with a level of timeliness this extra work was left in limbo in favor of the simpler Prophet package.
-
-# #### Daily-Hourly Cadence Forecasts
+# Daily-Hourly Cadence Forecasts
 
 # In[316]:
 
-
+#Copying the dataframe to a new variable to avoid override while running methods for the machine learning (ML) algorithm
 filler_comp = result.copy(deep=True)
-
 
 # In[317]:
 
-
+#changing datetime format to dd/mm/yyyy from mm/dd/yyyy in the dataframe which has the formats mixed in both formats
 filler_comp['Interval Start Datetime'] = pd.to_datetime(filler_comp['Interval Start Datetime'], infer_datetime_format = True, format='mixed')
 
 
 # In[318]:
 
-
+# setting the grouped interval by start-time and summing the calls presented
 filler_comp = filler_comp.groupby('Interval Start Datetime')['Calls Presented'].sum().reset_index()
 
 
 # In[319]:
 
-
+#preparing dataframe variables for ML run
 filler_comp = filler_comp.rename(columns = {'Interval Start Datetime':'ds', 'Calls Presented':'y'})
 
 
 # In[320]:
 
-
+#setting the index for the ML algorithm to the independent variable
 filler_comp = filler_comp.set_index('ds')
 
 
 # In[321]:
 
-
+#reseting the old index
 filler_comp.reset_index(inplace=True)
 
 
-# After converting the Interval Start Time parameter to a string we use a reference datetime variable for the train-test boundary we then run the portion of the time series up to the reference point as the training data for the Prophet model, conversely the datetimes after the reference point are to be used to test the model.
+"""After converting the Interval Start Time parameter to a string we use a reference datetime variable for the train-test split we then run the portion of the time series up to 
+the required percentage as the training data for the Prophet model, conversely the datetimes after the reference point are to be used to test the model."""
+
+"""Converting the specified datetime value in the string specified"""
 
 # In[ ]:
-
-
 split_date = '2024-06-30 17:30:00'
 date_format = "%Y-%m-%d %I:%M:%S"
 
-
 # In[ ]:
-
 
 from datetime import datetime
 
@@ -403,6 +407,7 @@ result_test = filler_comp.loc[filler_comp['ds'] > timestamp].copy()
 
 # In[ ]:
 
+#Applying the Prophet ML (machine learning) algorithm to the weekly parameters
 
 model = Prophet(weekly_seasonality=True, daily_seasonality=True, interval_width=0.95)
 model.add_country_holidays(country_name='JM')
@@ -411,34 +416,29 @@ model.fit(result_train)
 
 # In[161]:
 
-
-result_test_fcst = model.predict(df=result_test.reset_index()                                    .rename(columns={'TEST SET':'y'}))
-
-
-# In[ ]:
-
-
-result_train = result_train.reset_index()     .rename(columns={'TRAINING SET':'y'}).tail()
+#with the ML model now set we will now predict a forecast value for the test data for the calls expected to come in for the week ahead
+result_test_fcst = model.predict(df=result_test.reset_index().rename(columns={'TEST SET':'y'}))
 
 
 # In[ ]:
 
+#adjusting model training values for column to account for name of output values and to ensure clarity in what we are seeking to forecast
+result_train = result_train.reset_index().rename(columns={'TRAINING SET':'y'}).tail()
 
-result_test = result_test.reset_index()     .rename(columns={'TRAINING SET':'y'}).tail()
 
+# In[ ]:
+
+#adjusting model test values for column to account for name of output values and to ensure clarity in what we are seeking to forecast
+result_test = result_test.reset_index().rename(columns={'TRAINING SET':'y'}).tail()
 
 # #### Training data using FBProphet package
-
 # Forcasting from training data
 
 # In[86]:
-
-
 f, ax = plt.subplots(1)
 f.set_figheight(5)
 f.set_figwidth(15)
-fig = model.plot(result_test_fcst,
-                 ax=ax)
+fig = model.plot(result_test_fcst, ax=ax)
 plt.show()
 
 
@@ -446,7 +446,7 @@ plt.show()
 
 # In[426]:
 
-
+#Creating plot parameters using matplotlib class in python
 f, ax = plt.subplots(1)
 f.set_figheight(5)
 f.set_figwidth(15)
@@ -530,7 +530,7 @@ df_new = forecast[forecast['Time_period'].isin(working_hrs_start)]
 
 # In[327]:
 
-
+# creating new dataframe to prevent override
 erLang = df_new.copy()
 
 
@@ -604,8 +604,7 @@ df_WFM = pd.DataFrame.from_dict(positions_requirements)
 
 # In[338]:
 
-
+# adding a new parameters to the df_WFM dataframe to generate a CSV file 
 df_WFM['date_time'] = erLang['ds'].values
 df_WFM['forecast'] = erLang['yhat'].values
 df_WFM.to_csv(r'C:\Users\Artificial_Directory\WFM\outputs\WFM_erLang_forecast_Nov-14_OECS-FY25.csv')
-
